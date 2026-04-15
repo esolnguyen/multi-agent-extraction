@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-agent-workflow"
+version = "0.1.0"
+description = "Multi-agent document extraction using Gemini LLM and Azure Document Intelligence OCR"
+requires-python = ">=3.11"
+dependencies = [
+    "google-genai>=1.0.0",
+    "azure-ai-documentintelligence>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

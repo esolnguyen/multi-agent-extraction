@@ -1,0 +1,202 @@
+{
+  "flow_type": "BASIC",
+  "steps": [
+    {
+      "step_order": 1,
+      "step_type": "OCR",
+      "ocr_step_config": {
+        "provider": "azure_di",
+        "model_name": "prebuilt-read"
+      }
+    },
+    {
+      "step_order": 2,
+      "step_type": "DATA_EXTRACTION",
+      "llm_step_config": {
+        "provider": "gemini",
+        "model_name": "gemini-2.0-flash",
+        "system_prompt": "You are a document data extraction specialist. Extract structured data from the provided document and OCR data. Be precise and only extract information that is explicitly present in the document.",
+        "user_prompt": "Extract all relevant information from this document according to the response schema. For each field, provide the value and reference the OCR word IDs (wids) that support your extraction.",
+        "response_schema": {
+          "type": "object",
+          "properties": {
+            "document_title": {
+              "type": "object",
+              "properties": {
+                "v": { "type": "string" },
+                "wids": { "type": "array", "items": { "type": "integer" } }
+              }
+            },
+            "document_date": {
+              "type": "object",
+              "properties": {
+                "v": { "type": "string" },
+                "wids": { "type": "array", "items": { "type": "integer" } }
+              }
+            },
+            "total_amount": {
+              "type": "object",
+              "properties": {
+                "v": { "type": "string" },
+                "wids": { "type": "array", "items": { "type": "integer" } }
+              }
+            }
+          }
+        },
+        "executions": [
+          {
+            "domain_key": "header_info",
+            "user_prompt": "Extract the document header information: title, date, document number, and any reference numbers.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "document_title": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "document_date": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "document_number": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "line_items",
+            "user_prompt": "Extract all line items from the document. For each line item, extract the description, quantity, unit price, and total.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "description": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "quantity": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "unit_price": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "total": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "totals",
+            "user_prompt": "Extract the financial totals: subtotal, tax amount, tax rate, and grand total.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "subtotal": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "tax_amount": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      },
+                      "grand_total": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": {
+                            "type": "array",
+                            "items": { "type": "integer" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

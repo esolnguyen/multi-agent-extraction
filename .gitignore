@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+docker/.env
+data/output/
+data/*.pdf
+*.egg-info/

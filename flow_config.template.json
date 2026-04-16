@@ -1,0 +1,98 @@
+{
+  "flow_type": "BASIC",
+  "steps": [
+    {
+      "step_order": 1,
+      "step_type": "PAGE_DETECTION",
+      "page_detection_step_config": {
+        "provider": "gemini",
+        "model_name": "gemini-2.5-flash",
+        "pages_per_chunk": 100,
+        "system_prompt": "<ROLE + OBJECTIVE + DOMAIN DEFINITIONS + RULES + OUTPUT FORMAT>\n\nReturn a JSON object whose keys are the domain names below and whose values are arrays of 1-based integer page numbers. Omit domains with no matches.",
+        "user_prompt": "Identify the page numbers per domain and return the JSON object per the schema.",
+        "response_schema": {
+          "type": "object",
+          "properties": {
+            "domain_a": { "type": "array", "items": { "type": "integer" } },
+            "domain_b": { "type": "array", "items": { "type": "integer" } }
+          }
+        }
+      }
+    },
+    {
+      "step_order": 2,
+      "step_type": "OCR",
+      "ocr_step_config": {
+        "provider": "azure_di",
+        "model_name": "prebuilt-read"
+      }
+    },
+    {
+      "step_order": 3,
+      "step_type": "DATA_EXTRACTION",
+      "llm_step_config": {
+        "provider": "gemini",
+        "model_name": "gemini-2.5-flash",
+        "system_prompt": "<DEFAULT SYSTEM PROMPT USED BY ALL AGENTS UNLESS THEY OVERRIDE>",
+        "user_prompt": "<DEFAULT USER PROMPT USED BY ALL AGENTS UNLESS THEY OVERRIDE>",
+        "executions": [
+          {
+            "domain_key": "domain_a",
+            "user_prompt": "<Instructions for domain_a>",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field_1": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": { "type": "array", "items": { "type": "integer" } }
+                        }
+                      },
+                      "field_2": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": { "type": "array", "items": { "type": "integer" } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "domain_b",
+            "user_prompt": "<Instructions for domain_b>",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "field_1": {
+                        "type": "object",
+                        "properties": {
+                          "v": { "type": "string" },
+                          "wids": { "type": "array", "items": { "type": "integer" } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

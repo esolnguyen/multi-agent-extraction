@@ -21,18 +21,28 @@ def _get_client() -> DocumentIntelligenceClient:
     return _client
 
 
-def call_ocr(content: bytes, model_name: str = "prebuilt-read") -> list[dict[str, Any]]:
+def call_ocr(
+    content: bytes,
+    model_name: str = "prebuilt-read",
+    pages: list[int] | None = None,
+) -> list[dict[str, Any]]:
     """Run Azure Document Intelligence OCR on PDF bytes.
 
     Returns list of page elements:
     [{"page": int, "words": [{"id": int, "text": str, "box": [x1,y1,x2,y2], "conf": float}]}]
+
+    If `pages` is provided, only those 1-based page numbers are analyzed.
     """
     client = _get_client()
 
-    poller = client.begin_analyze_document(
-        model_id=model_name,
-        analyze_request=AnalyzeDocumentRequest(bytes_source=content),
-    )
+    kwargs: dict[str, Any] = {
+        "model_id": model_name,
+        "body": AnalyzeDocumentRequest(bytes_source=content),
+    }
+    if pages:
+        kwargs["pages"] = ",".join(str(p) for p in sorted(set(pages)))
+
+    poller = client.begin_analyze_document(**kwargs)
     result = poller.result()
 
     page_elements: list[dict[str, Any]] = []

@@ -1,0 +1,202 @@
+{
+  "flow_type": "BASIC",
+  "steps": [
+    {
+      "step_order": 1,
+      "step_type": "PAGE_DETECTION",
+      "page_detection_step_config": {
+        "provider": "gemini",
+        "model_name": "gemini-2.5-flash",
+        "pages_per_chunk": 100,
+        "system_prompt": "### System Instruction: Technical Specification Page Locator (Domain-Grouped)\n\n**Role:** You are an expert Technical Document Analyst specializing in automotive manuals.\n\n**Objective:**\nYou are analyzing a vehicle Owner's Handbook (PDF). Your mission is to identify the **exact page numbers** containing **Technical Data tables, charts, or structured lists** and group them by domain:\n- **engines** - Engine, fuel, cooling, oil, lubrication data\n- **tyres** - Tyre/wheel specifications, inflation pressures\n- **transmissions** - Gearbox ratios, transmission fluid specs\n- **brakes** - Brake fluid, disc/pad specs, pedal travel\n- **steering** - Steering fluid, power steering specs\n- **axles** - Differential, transfer case, axle fluid specs\n- **service_interval** - Scheduled maintenance intervals, service tables\n\n---\n\n### 1. MATCH CRITERIA\n\nA page is a **MATCH** only if it contains:\n- **Structured Data:** Tables, grids, matrices, or distinct lists with headers.\n- **Explicit Units/Values:** Actual numbers with units (e.g., psi, kPa, L, ml, cc, kW, Nm, SAE, DOT, g).\n\n**IGNORE** pages with only:\n- Prose paragraphs without data tables.\n- General warnings without technical specs.\n- How-to instructions lacking specific capacity/pressure/specification numbers.\n\n---\n\n### 2. DOMAIN DEFINITIONS\n\n#### engines\nEngine names/codes, displacement (cc), oil viscosity grades (0W-20, 5W-30), API/ACEA/ILSAC standards, oil capacity (L), coolant capacity (L), mixing ratios, fuel tank capacity (L), octane ratings (RON/AKI), AdBlue/DEF capacity.\n\n#### tyres\nTyre sizes (235/65R17), spare tyre sizes, inflation pressure tables (front/rear/spare in bar/kPa/psi by load), wheel/rim dimensions (17 x 7.0J), speed/load indices.\n\n#### transmissions\nGear ratio tables, automatic/manual transmission fluid types, part numbers, standards, fluid capacities (L/qt).\n\n#### brakes\nBrake fluid standards (DOT 3/4), pedal travel specs, disc thickness, pad specs.\n\n#### steering\nSteering fluid types (PSF-3, Dexron), system capacities.\n\n#### axles\nFront/rear differential oil capacities (L), transfer case specs, viscosity grades (75W-90).\n\n#### service_interval\nScheduled maintenance tables, service interval distances/time periods, inspection checklists with km/miles or month intervals.\n\n> **Synonyms:** Tyre/Tire, Transmission/Gearbox/Transaxle, Viscosity/SAE Grade, AdBlue/DEF/Urea, Refrigerant/Air Con Gas, Axle/Differential/Final Drive.\n\n---\n\n### 3. RULES\n\n1. Scan for sections titled \"Specifications,\" \"Technical Data,\" \"Service Data,\" \"Fluids & Lubricants,\" or \"Maintenance.\"\n2. Verify the page has numbers and units in a table or list.\n3. Assign each matching page to one or more domains.\n4. A page may appear in multiple domains if it contains data for more than one.\n5. Omit domains with no matching pages entirely.\n\n### 4. OUTPUT\n\nReturn a JSON object. Keys are the domain names above; values are arrays of 1-based integer page numbers. Omit domains with no matches.",
+        "user_prompt": "Identify the page numbers per domain for this owner's handbook and return the JSON object per the schema.",
+        "response_schema": {
+          "type": "object",
+          "properties": {
+            "engines": { "type": "array", "items": { "type": "integer" } },
+            "tyres": { "type": "array", "items": { "type": "integer" } },
+            "transmissions": { "type": "array", "items": { "type": "integer" } },
+            "brakes": { "type": "array", "items": { "type": "integer" } },
+            "steering": { "type": "array", "items": { "type": "integer" } },
+            "axles": { "type": "array", "items": { "type": "integer" } },
+            "service_interval": { "type": "array", "items": { "type": "integer" } }
+          }
+        }
+      }
+    },
+    {
+      "step_order": 2,
+      "step_type": "OCR",
+      "ocr_step_config": {
+        "provider": "azure_di",
+        "model_name": "prebuilt-read"
+      }
+    },
+    {
+      "step_order": 3,
+      "step_type": "DATA_EXTRACTION",
+      "llm_step_config": {
+        "provider": "gemini",
+        "model_name": "gemini-2.5-flash",
+        "system_prompt": "You are a technical document data extraction specialist for automotive owner's handbooks. Extract structured technical specifications from the provided document and OCR data. Be precise and only extract values explicitly present in the document (numbers with their units).",
+        "user_prompt": "Extract the technical specifications for this domain. For each field, provide the value string (including its unit) and the OCR word IDs (wids) that support your extraction.",
+        "executions": [
+          {
+            "domain_key": "engines",
+            "user_prompt": "Extract engine, fuel, cooling, oil, and lubrication specifications.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "engine_code": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "displacement": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "oil_viscosity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "oil_standard": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "oil_capacity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "coolant_capacity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "fuel_tank_capacity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "octane_rating": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "adblue_capacity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "tyres",
+            "user_prompt": "Extract tyre/wheel specifications and inflation pressures (front/rear/spare by load).",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tyre_size": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "front_pressure": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "rear_pressure": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "spare_tyre_size": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "wheel_dimensions": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "speed_load_index": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "load_condition": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "transmissions",
+            "user_prompt": "Extract transmission fluid types, capacities, and gear ratios.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "transmission_type": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "fluid_type": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "fluid_standard": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "fluid_capacity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "gear_ratios": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "brakes",
+            "user_prompt": "Extract brake fluid standards, pedal travel, and disc/pad specs.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "brake_fluid_standard": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "pedal_travel": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "disc_thickness": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "pad_thickness": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "steering",
+            "user_prompt": "Extract steering fluid types and system capacities.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "steering_fluid_type": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "system_capacity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "axles",
+            "user_prompt": "Extract differential, transfer case, and axle fluid specs.",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "position": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "fluid_type": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "viscosity_grade": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "capacity": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "domain_key": "service_interval",
+            "user_prompt": "Extract scheduled maintenance intervals, service tables, and inspection checklists (km/miles/month).",
+            "response_schema": {
+              "type": "object",
+              "properties": {
+                "extracted_data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "service_item": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "interval_distance": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "interval_time": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } },
+                      "action": { "type": "object", "properties": { "v": { "type": "string" }, "wids": { "type": "array", "items": { "type": "integer" } } } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
